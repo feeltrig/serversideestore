@@ -3,10 +3,13 @@ const app = express();
 const cors = require("cors");
 const path = require("path");
 const mysql = require("mysql");
+const { DATE } = require("mysql/lib/protocol/constants/types");
+const { timeStamp } = require("console");
 
 app.use(
   cors({
     origin: "http://localhost:3000",
+    methods: ["GET", "POST", "PUT"],
   })
 );
 app.use(express.json());
@@ -39,15 +42,17 @@ const db = mysql.createConnection({
 
 db.connect();
 
+// GET ALL USER DATA
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM estoreusers";
 
   db.query(sql, (err, result) => {
     if (err) throw err;
-    res.send(result);
+    res.json(result);
   });
 });
 
+// CREATE USER
 app.post("/api/submitform", (req, res) => {
   // for urlecoded
   // console.log(req.body.password);
@@ -55,26 +60,40 @@ app.post("/api/submitform", (req, res) => {
   // console.log(req.body);
   // console.log(req.headers["content-type"]);
   // res.send("api worked fine");
-  const { username, password, city } = req.body;
-  console.log(username, password, city);
 
+  // GETTING DATA FROM USER
+  const { username, password, city } = req.body;
+
+  // check for existing user otherwise cancel insert
   db.query(
-    "INSERT INTO estoreusers(username,password,city) VALUES (?,?,?)",
-    [username, password, city],
+    "SELECT username, password FROM estoreusers WHERE username = ? AND password = ?",
+    [username.toString(), password.toString()],
     (err, result) => {
       if (err) throw err;
-      console.log(result);
-      res.send(result);
+
+      // STOP PROPOGATION IF USER EXISTS
+      if (result.length > 0) {
+        res.json({ message: "user already exist" });
+        return;
+      }
+
+      // CREATE NEW USER IF DOESNT EXISTS
+      console.log("user is new");
+      db.query(
+        "INSERT INTO estoreusers(username,password,city) VALUES (?,?,?)",
+        [username, password, city],
+        (err, result) => {
+          if (err) throw err;
+          res.json(result);
+        }
+      );
     }
   );
 });
 
 // USER AUTH
-
 app.post("/api/login", (req, res) => {
   const { username, password } = req.body;
-
-  // res.send();
 
   // check for user existence
   db.query(
@@ -82,23 +101,43 @@ app.post("/api/login", (req, res) => {
     [username, password],
     (err, result) => {
       if (err) throw err;
-      // res.send(result);
 
       // need to convert to string and parse back to json
       // to access values from db rowpacketobject
       let final = JSON.parse(JSON.stringify(result));
-      console.log(final);
       if (final.length > 0) {
-        res.send(final);
+        res.json(final);
       }
     }
   );
 });
 
+// UPDATE CART INFO
+app.put("/user/checkout/:username", (req, res) => {
+  const username = req.params.username;
+  const purchaseList = req.body.purchaseList;
+
+  if (purchaseList.length < 1) {
+    res.json({ message: "No items added to cart" });
+  } else {
+    db.query(
+      "UPDATE estoreusers SET purchaseList = ? WHERE id = ?",
+      [purchaseList, id],
+      (err) => {
+        if (err) throw new Error(err);
+        res.json({ message: "Successfully updated" });
+      }
+    );
+  }
+
+  res.json({ message: "user checked out" });
+});
+
 app.listen(PORT);
 
+// SERVER RUNNING STATUS
 console.log("server running on " + PORT);
 
-let somthing = {};
+const dt = new Date().toUTCString();
 
-console.log(somthing.username);
+console.log(dt);
