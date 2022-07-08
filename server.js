@@ -106,7 +106,10 @@ app.post("/api/login", async (req, res) => {
       // to access values from db rowpacketobject
       let final = JSON.parse(JSON.stringify(result));
       if (final.length > 0) {
+        final.push({ allowAccess: "true" });
         res.json(final);
+      } else {
+        res.sendStatus(500);
       }
     }
   );
@@ -117,19 +120,27 @@ app.put("/checkout/:username", async (req, res) => {
   const username = req.params.username;
   const purchaseList = JSON.stringify(req.body.purchaseList);
   const id = req.body.id;
+  const totalPrice = req.body.totalcost;
 
-  console.log(typeof req.body.purchaseList);
-
-  if (req.body.purchaseList.length < 1) {
+  if (purchaseList.length < 1) {
     console.log("no cart items");
     res.json({ message: "No items added to cart" });
   } else {
+    // db.query(
+    //   "UPDATE estoreusers SET purchaseList = ? WHERE id = ? AND username = ?",
+    //   [purchaseList, id, username],
+    //   (err) => {
+    //     if (err) throw new Error(err);
+    //     res.json({ message: "Successfully updated" });
+    //   }
+    // );
+
     db.query(
-      "UPDATE estoreusers SET purchaseList = ? WHERE id = ? AND username = ?",
-      [purchaseList, id, username],
+      "INSERT INTO purchaseHistory(userid,purchaseList,time,totalPrice) VALUES(?,?,now(),?)",
+      [id, purchaseList, totalPrice],
       (err) => {
-        if (err) throw new Error(err);
-        res.json({ message: "Successfully updated" });
+        if (err) console.error(err);
+        res.json({ message: "succesfully added" });
       }
     );
   }
@@ -140,19 +151,22 @@ app.put("/checkout/:username", async (req, res) => {
 app.get("/purchaseList/:id", (req, res) => {
   const id = req.params.id;
 
-  // console.log(id);
+  console.log(id);
 
   db.query(
-    "SELECT purchaseList FROM estoreusers WHERE id = ? ",
+    "SELECT purchaseList, time, totalPrice FROM purchaseHistory WHERE userid = ?",
     [id],
     (err, result) => {
       if (err) {
+        console.error(err);
         res.send({ message: "wrong info/error" });
       }
 
       let final = JSON.parse(JSON.stringify(result));
       if (final.length > 0) {
-        res.json(final);
+        setTimeout(() => {
+          res.json(final);
+        }, 5000);
       }
     }
   );
@@ -166,3 +180,7 @@ console.log("server running on " + PORT);
 const dt = new Date().toUTCString();
 
 console.log(dt);
+
+setTimeout(() => {
+  console.log("timwout");
+}, 2000);
