@@ -92,12 +92,12 @@ app.post("/api/submitform", (req, res) => {
 });
 
 // USER AUTH
-app.post("/api/login", (req, res) => {
+app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
 
   // check for user existence
   db.query(
-    "SELECT username, password FROM estoreusers WHERE username = ? AND password = ?",
+    "SELECT username, password, id FROM estoreusers WHERE username = ? AND password = ?",
     [username, password],
     (err, result) => {
       if (err) throw err;
@@ -113,24 +113,49 @@ app.post("/api/login", (req, res) => {
 });
 
 // UPDATE CART INFO
-app.put("/user/checkout/:username", (req, res) => {
+app.put("/checkout/:username", async (req, res) => {
   const username = req.params.username;
-  const purchaseList = req.body.purchaseList;
+  const purchaseList = JSON.stringify(req.body.purchaseList);
+  const id = req.body.id;
 
-  if (purchaseList.length < 1) {
+  console.log(typeof req.body.purchaseList);
+
+  if (req.body.purchaseList.length < 1) {
+    console.log("no cart items");
     res.json({ message: "No items added to cart" });
   } else {
     db.query(
-      "UPDATE estoreusers SET purchaseList = ? WHERE id = ?",
-      [purchaseList, id],
+      "UPDATE estoreusers SET purchaseList = ? WHERE id = ? AND username = ?",
+      [purchaseList, id, username],
       (err) => {
         if (err) throw new Error(err);
         res.json({ message: "Successfully updated" });
       }
     );
   }
+});
 
-  res.json({ message: "user checked out" });
+// SEND PRUCHASE HISTORY
+
+app.get("/purchaseList/:id", (req, res) => {
+  const id = req.params.id;
+
+  // console.log(id);
+
+  db.query(
+    "SELECT purchaseList FROM estoreusers WHERE id = ? ",
+    [id],
+    (err, result) => {
+      if (err) {
+        res.send({ message: "wrong info/error" });
+      }
+
+      let final = JSON.parse(JSON.stringify(result));
+      if (final.length > 0) {
+        res.json(final);
+      }
+    }
+  );
 });
 
 app.listen(PORT);
