@@ -27,10 +27,7 @@ app.get("/", (req, res) => {
 app.use(express.static(path.join(__dirname, "staticfolder")));
 
 // ROUTES
-app.get("/api/stuff", (req, res) => {
-  console.log(`Server started at PORT`);
-  res.json(data);
-});
+app.use("/api", require("./routes/allusers"));
 
 // MYSQL DB
 const db = mysql.createConnection({
@@ -42,15 +39,31 @@ const db = mysql.createConnection({
 
 db.connect();
 
-// GET ALL USER DATA
-app.get("/users", (req, res) => {
-  const sql = "SELECT * FROM estoreusers";
+// CREATE MANDATORY TABLES
+db.query(
+  "create table estoreusers( id int auto_increment,username varchar(255) unique not null,password varchar(255) not null,city varchar(255),purchaseList text,primary key(id))",
+  (err) => {
+    if (err) console.log(err.code === "ER_TABLE_EXISTS_ERROR");
+  }
+);
 
-  db.query(sql, (err, result) => {
-    if (err) throw err;
-    res.json(result);
-  });
-});
+db.query(
+  "create table purchaseHistory(id int auto_increment,userid int,time datetime,totalPrice numeric,purchaseList text,primary key(id),foreign key(userid) references estoreusers(id))",
+  (err) => {
+    if (err) console.log(err.code === "ER_TABLE_EXISTS_ERROR");
+  }
+);
+
+// GET ALL USER DATA
+
+// app.get("/users", (req, res) => {
+//   const sql = "SELECT * FROM estoreusers";
+
+//   db.query(sql, (err, result) => {
+//     if (err) throw err;
+//     res.json(result);
+//   });
+// });
 
 // CREATE USER
 app.post("/api/submitform", (req, res) => {
@@ -172,6 +185,8 @@ app.get("/purchaseList/:id", (req, res) => {
   );
 });
 
+db.end();
+
 app.listen(PORT);
 
 // SERVER RUNNING STATUS
@@ -180,7 +195,3 @@ console.log("server running on " + PORT);
 const dt = new Date().toUTCString();
 
 console.log(dt);
-
-setTimeout(() => {
-  console.log("timwout");
-}, 2000);
