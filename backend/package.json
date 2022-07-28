@@ -1,0 +1,37 @@
+{
+ 
+  "name": "server-side",
+ 
+  "version": "1.0.0",
+ 
+  "main": "index.js",
+ 
+  "dependencies": {
+ 
+   
+  "cors": "^2.8.5",
+ 
+   
+  "express": "^4.17.3",
+ 
+   
+  "mysql": "^2.18.1",
+ 
+   
+  "socket.io": "^4.4.1"
+ 
+  },
+ 
+  "scripts": {
+ 
+   
+  "nm": "nodemon server"
+ 
+  },
+ 
+  "author": "",
+ 
+  "license": "ISC",
+ 
+  "description": ""
+}
